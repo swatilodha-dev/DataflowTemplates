@@ -92,14 +92,17 @@ public class TextImportTransform extends PTransform<PBegin, PDone> {
 
   private final ValueProvider<String> importManifest;
   private final ValueProvider<String> invalidOutputPath;
+  private final ValueProvider<Integer> maxNumRows;
 
   public TextImportTransform(
       SpannerConfig spannerConfig,
       ValueProvider<String> importManifest,
-      ValueProvider<String> invalidOutputPath) {
+      ValueProvider<String> invalidOutputPath,
+      ValueProvider<Integer> maxNumRows) {
     this.spannerConfig = spannerConfig;
     this.importManifest = importManifest;
     this.invalidOutputPath = invalidOutputPath;
+    this.maxNumRows = maxNumRows;
   }
 
   @Override
@@ -208,6 +211,10 @@ public class TextImportTransform extends PTransform<PBegin, PDone> {
                       .withCommitDeadline(Duration.standardMinutes(1))
                       .withMaxCumulativeBackoff(Duration.standardHours(2))
                       .withMaxNumMutations(10000)
+                      .withMaxNumRows(
+                          maxNumRows != null && maxNumRows.isAccessible() && maxNumRows.get() != null
+                              ? maxNumRows.get().longValue()
+                              : 500L)
                       .withGroupingFactor(100)
                       .withFailureMode(SpannerIO.FailureMode.REPORT_FAILURES)
                       .withDialectView(dialectView));
